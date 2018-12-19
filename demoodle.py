@@ -4,9 +4,7 @@ from io import StringIO
 from lxml.html.soupparser import fromstring as html_fromstring
 from parsimonious import NodeVisitor, Grammar
 
-CLOZE_HTML_XPATH = (
-    '/quiz/question[@type="cloze"]/questiontext[@format="html"]/text/text()'
-)
+CLOZE_HTML_XPATH = '/quiz/question[@type="cloze"]/questiontext[@format="html"]/text/text()'
 SHORT_ANSWER_XPATH = '/html/p/text()[contains(.,":SHORTANSWER:")]'
 
 ANSWER_GRAMMAR = Grammar(
@@ -33,8 +31,8 @@ def extract_short_answers(question):
     return question.xpath(SHORT_ANSWER_XPATH)
 
 
-Cloze = namedtuple("Cloze", ["id", "cloze_type", "answers"])
-Answer = namedtuple("Answer", ["text", "score"])
+Cloze = namedtuple("Cloze", ("id", "cloze_type", "answers"))
+Answer = namedtuple("Answer", ("text", "score"))
 
 
 class AnswerVisitor(NodeVisitor):
