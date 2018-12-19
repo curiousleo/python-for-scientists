@@ -4,6 +4,7 @@ from collections import namedtuple
 from lxml import etree
 from io import StringIO
 import re
+import html
 from parsimonious import NodeVisitor, Grammar
 
 CLOZE_XPATH = '/quiz/question[@type="cloze"]'
@@ -72,7 +73,7 @@ class ClozeVisitor(NodeVisitor):
         return Answer(text=children[3], score=children[1])
 
     def visit_answer_text(self, node, children):
-        return node.text
+        return html.unescape(node.text)
 
     def visit_type(self, node, children):
         return node.text.lower()
@@ -147,6 +148,9 @@ if __name__ == "__main__":
     from sys import argv
 
     with open(argv[1]) as quiz:
-        for (name, html) in extract_questions(quiz):
-            clozes = tuple(parse_cloze(cloze) for cloze in extract_clozes(html))
-            print(Question(name=name, clozes=clozes))
+        for (name, question) in extract_questions(quiz):
+            print(name)
+            for cloze in extract_clozes(question):
+                print(f"  Cloze {cloze}")
+                for answer in parse_cloze(html.unescape(cloze)).answers:
+                    print(f"    [{answer.score: >3}%] {answer.text}")
