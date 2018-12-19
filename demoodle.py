@@ -1,12 +1,15 @@
+#!/usr/bin/env python3
+
 from collections import namedtuple
 from lxml import etree
 from io import StringIO
-from lxml.html.soupparser import fromstring as html_fromstring
+import re
 from parsimonious import NodeVisitor, Grammar
 
-CLOZE_HTML_XPATH = '/quiz/question[@type="cloze"]/questiontext[@format="html"]/text/text()'
-SHORT_ANSWER_XPATH = '/html/p/text()[contains(.,":SHORTANSWER:")]'
-
+CLOZE_XPATH = '/quiz/question[@type="cloze"]'
+NAME_XPATH = "name/text/text()"
+HTML_XPATH = 'questiontext[@format="html"]/text/text()'
+CLOZE_RE = re.compile(r"({\d+:[^}]+})")
 ANSWER_GRAMMAR = Grammar(
     """
     cloze           = "{" number ":" type ":" answer further_answers "}"
@@ -23,19 +26,24 @@ ANSWER_GRAMMAR = Grammar(
 
 
 def extract_questions(quiz):
-    cloze_text = etree.parse(quiz).xpath(CLOZE_HTML_XPATH)
-    return (html_fromstring(html) for html in cloze_text)
+    questions = etree.parse(quiz).xpath(CLOZE_XPATH)
+    return ((q.xpath(NAME_XPATH)[0], q.xpath(HTML_XPATH)[0]) for q in questions)
 
 
-def extract_short_answers(question):
-    return question.xpath(SHORT_ANSWER_XPATH)
+def extract_clozes(question):
+    return (match.group() for match in CLOZE_RE.finditer(question))
 
 
+def parse_cloze(cloze):
+    return ClozeVisitor().parse(cloze)
+
+
+Question = namedtuple("Question", ("name", "clozes"))
 Cloze = namedtuple("Cloze", ("id", "cloze_type", "answers"))
 Answer = namedtuple("Answer", ("text", "score"))
 
 
-class AnswerVisitor(NodeVisitor):
+class ClozeVisitor(NodeVisitor):
     def __init__(self):
         self.grammar = ANSWER_GRAMMAR
 
@@ -74,8 +82,7 @@ class AnswerVisitor(NodeVisitor):
 
 
 def test_extract_questions():
-    quiz = StringIO(
-        """
+    quiz = """
 <quiz>
 <!-- question: 0  -->
   <question type="category">
@@ -99,16 +106,15 @@ der Teilfragen bzgl. Bewertung = 1:1:1<br>]]></text>
     <hidden>0</hidden>
   </question>
 </quiz>
-  """.strip()
-    )
-    questions = list(extract_questions(quiz))
+    """
+    questions = tuple(extract_questions(StringIO(quiz)))
     assert len(questions) == 1
+    assert questions[0][0] == "Aufgabe 01a Nomenklatur"
+    assert questions[0][1] == "<p>hi</p>"
 
 
-def test_extract_short_answers():
-    question = html_fromstring(
-        StringIO(
-            """
+def test_extract_clozes():
+    question = """
 <p><strong>Nomenklatur</strong></p>
 <p><em>Bitte verwenden Sie bei der Eingabe der Namen von Molekül-Teilstrukturen ohne Lokanten <span style="text-decoration: underline;">keine</span> initialen oder terminalen <span style="text-decoration: underline;">Bindestriche</span>.</em></p>
 <p><img src="@@PLUGINFILE@@/1a%20%282%29.png" alt="" role="presentation" class="img-responsive atto_image_button_text-bottom" width="220" height="110"><br></p>
@@ -117,36 +123,30 @@ def test_extract_short_answers():
 <p>{1:MULTICHOICE:R~S~=Z~E~P~M~Re~Si}</p>
 <p><strong>3)</strong> Wie lautet der Name des im Molekül enthaltenen Heterocyclus (Name des unsubstituierten Heterocyclus)?</p>
 <p>{1:SHORTANSWER:=Piperidin~=Azacyclohexan~=1-Azacyclohexan~xxxxxxxxxxxxxxxxxxxx}</p>
-    """.strip()
-        )
-    )
-    short_answers = extract_short_answers(question)
-    assert len(short_answers) == 2
-    assert (
-        short_answers[0]
-        == "{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}"
-    )
-    assert (
-        short_answers[1]
-        == "{1:SHORTANSWER:=Piperidin~=Azacyclohexan~=1-Azacyclohexan~xxxxxxxxxxxxxxxxxxxx}"
+    """
+    clozes = tuple(extract_clozes(question))
+    assert clozes == (
+        "{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}",
+        "{1:MULTICHOICE:R~S~=Z~E~P~M~Re~Si}",
+        "{1:SHORTANSWER:=Piperidin~=Azacyclohexan~=1-Azacyclohexan~xxxxxxxxxxxxxxxxxxxx}",
     )
 
 
-def test_grammar():
-    v = AnswerVisitor()
-    print(
-        v.parse(
-            """
-{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}
-""".strip()
-        )
+def test_parse_cloze():
+    cloze = parse_cloze(
+        "{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}"
     )
+
+    assert isinstance(cloze, Cloze)
+    assert len(cloze.answers) == 9
+    assert cloze.answers[0] == Answer(text="But-2-enal", score=100)
+    assert cloze.answers[4] == Answer(text="But-2-enon", score=50)
 
 
 if __name__ == "__main__":
-    test_grammar()
-    # from sys import argv
-    # with open(argv[1]) as quiz:
-    #    for question in extract_questions(quiz):
-    #        for answer in extract_short_answers(question):
-    #            print(answer)
+    from sys import argv
+
+    with open(argv[1]) as quiz:
+        for (name, html) in extract_questions(quiz):
+            clozes = tuple(parse_cloze(cloze) for cloze in extract_clozes(html))
+            print(Question(name=name, clozes=clozes))
