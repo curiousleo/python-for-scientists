@@ -1,21 +1,23 @@
 from lxml import etree
 from io import StringIO
 from lxml.html.soupparser import fromstring as html_fromstring
-from parsimonious import Grammar
+from parsimonious import NodeVisitor, Grammar
 
 CLOZE_HTML_XPATH = '/quiz/question[@type="cloze"]/questiontext[@format="html"]/text/text()'
 SHORT_ANSWER_XPATH = '/html/p/text()[contains(.,":SHORTANSWER:")]'
 
 ANSWER_GRAMMAR = Grammar(
     '''
-    expression  = (answers / ~"."s)*
-    answers     = "{" number ":SHORTANSWER:" answer ("~" answer)* "}"
-    answer      = correct / partial / wrong
-    correct     = "=" answer_text
-    partial     = "%" ~"[0-9]{2}" "%" answer_text
-    wrong       = answer_text
-    answer_text = ~"[^~}]+"
-    number      = ~"[0-9]+"
+    expression     = answers_or_not*
+    answers_or_not = answers / not_answers
+    not_answers    = ~"."s
+    answers        = "{" number ":SHORTANSWER:" answer further_answer* "}"
+    further_answer = "~" answer
+    answer         = correct / partial / answer_text
+    correct        = "=" answer_text
+    partial        = "%" number "%" answer_text
+    answer_text    = ~"[^~}]+"
+    number         = ~"[0-9]+"
     ''')
 
 
@@ -26,6 +28,61 @@ def extract_questions(quiz):
 
 def extract_short_answers(question):
     return question.xpath(SHORT_ANSWER_XPATH)
+
+
+class AnswerVisitor2(NodeVisitor):
+
+    def __init__(self):
+        self.grammar = ANSWER_GRAMMAR
+        self.answers = []
+
+    def generic_visit(self, node, children):
+        pass
+
+    def visit_answer_text(self, node, children):
+        self.answers.append(node.text)
+
+    def visit_expression(self, node, children):
+        return self.answers
+
+
+class AnswerVisitor(NodeVisitor):
+
+    def __init__(self):
+        self.grammar = ANSWER_GRAMMAR
+
+    def visit_not_answers(self, node, children):
+        return None
+
+    def visit_number(self, node, children):
+        return None
+
+    def generic_visit(self, node, children):
+        return tuple(child for child in children if child)
+
+    def visit_expression(self, node, children):
+        return tuple(child for child in children if child)
+
+    def visit_further_answer(self, node, children):
+        return children[1]
+
+    def visit_answers_or_not(self, node, children):
+        return children[0]
+
+    def visit_answers(self, node, children):
+        return tuple([children[3]] + list(children[4]))
+
+    def visit_answer(self, node, children):
+        return children[0]
+
+    def visit_correct(self, node, children):
+        return children[1]
+
+    def visit_partial(self, node, children):
+        return children[3]
+
+    def visit_answer_text(self, node, children):
+        return node.text
 
 
 def test_extract_questions():
@@ -77,7 +134,8 @@ def test_extract_short_answers():
 
 
 def test_grammar():
-    print(ANSWER_GRAMMAR.parse('''
+    v = AnswerVisitor2()
+    print(v.parse('''
 <p><img src="@@PLUGINFILE@@/1a%20%282%29.png" alt="" role="presentation" class="img-responsive atto_image_button_text-bottom" width="220" height="110"><br></p>
 <p>{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}</p>
 <p><strong>2)</strong> Wie lautet der Stereodeskriptor für obiges Molekül?</p>
