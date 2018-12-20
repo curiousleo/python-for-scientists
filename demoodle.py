@@ -150,6 +150,6 @@ if __name__ == "__main__":
         for (name, question) in extract_questions(quiz):
             print(name)
             for cloze in extract_clozes(question):
-                print(f"  Cloze {cloze}")
+                print(f"  {cloze}")
                 for answer in parse_cloze(html.unescape(cloze)).answers:
                     print(f"    [{answer.score: >3}%] {answer.text}")
