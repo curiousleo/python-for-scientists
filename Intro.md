@@ -25,11 +25,9 @@ Let's follow Tip #1 and describe the problem in terms of its relevant concepts, 
 
 **Inputs**
 
-- <abbr title="Comma-separated values">CSV</abbr> file with a row for each student and one column per question. The cell in row _s_ and column _q_ contains the answer student _s_ gave for question _q_.
-- Moodle <abbr title="eXtensible markup language">XML</abbr> file of the exam, containing all questions. For each multiple choice question, the answer options and their scores are included.
-
-Note that a question can have multiple parts. The answers to all parts of a question are put in the same cell in the CSV input file.
+- <abbr title="Comma-separated values">CSV</abbr> file with a row for each student and one column per question. The cell in row _s_ and column _q_ contains the answers student _s_ gave for all question parts in question _q_.
+- Moodle <abbr title="eXtensible markup language">XML</abbr> file of the exam containing all questions. For each multiple choice question, the answer options and their scores are included.
 
 **Outputs**
 
-- CSV file with one row for the correct answers, followed by one row per student. There is one column per for each part of all multiple choice questions. Cells contain the students' answers.
+- CSV file with one row for the correct answers, followed by one row per student. There is one column per for question part for all question parts that are multiple choice. Cells contain the students' answers.
