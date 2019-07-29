@@ -20,7 +20,9 @@ if __name__ == "__main__":
                 clozes_list.append(
                     [quiz.parse_cloze(q) for q in quiz.extract_clozes(question_text)]
                 )
-            keep_indices = tuple(output.shortanswer_marker(clozes_list))
+            keep_indices = tuple(
+                output.contains_cloze_type(("shortanswer", "numerical"), clozes_list)
+            )
             header = [
                 cell for (keep, cell) in zip(keep_indices, output.csv_header(clozes_list)) if keep
             ]

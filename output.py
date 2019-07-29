@@ -25,7 +25,7 @@ def csv_row(questions):
             yield "|".join(correct_answers)
 
 
-def shortanswer_marker(questions):
+def contains_cloze_type(cloze_types, questions):
     for clozes in questions:
         if len(clozes) == 0:
             yield False
@@ -34,7 +34,7 @@ def shortanswer_marker(questions):
             if len(cloze.answers) == 0:
                 yield False
                 continue
-            yield cloze.cloze_type == "shortanswer"
+            yield cloze.cloze_type in cloze_types
 
 
 def test_csv_functions():
@@ -70,7 +70,7 @@ def test_csv_functions():
         "Aufgabe 2",
     )
     assert tuple(csv_row(questions)) == ("correct1|correct2", "<>", "correct", "<>")
-    assert tuple(shortanswer_marker(questions)) == (False, False, True, False)
+    assert tuple(contains_cloze_type(("shortanswer",), questions)) == (False, False, True, False)
 
 
 def postprocess_cell(cell):
