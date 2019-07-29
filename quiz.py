@@ -4,7 +4,6 @@ from io import StringIO
 import re
 import html
 from parsimonious import NodeVisitor, Grammar
-from typing import Iterable, Tuple
 
 CLOZE_XPATH = '/quiz/question[@type!="category" and @type!="description"]'
 NAME_XPATH = "name/text/text()"
@@ -17,16 +16,16 @@ Cloze = namedtuple("Cloze", ("id", "cloze_type", "answers"))
 Answer = namedtuple("Answer", ("text", "score"))
 
 
-def extract_questions(quiz: str) -> Iterable[Tuple[str, str]]:
+def extract_questions(quiz):
     questions = etree.parse(quiz).xpath(CLOZE_XPATH)
     return ((q.xpath(NAME_XPATH)[0], q.xpath(HTML_XPATH)[0]) for q in questions)
 
 
-def extract_clozes(question: str) -> Iterable[str]:
+def extract_clozes(question):
     return (match.group() for match in CLOZE_RE.finditer(question))
 
 
-def parse_cloze(cloze: str) -> Cloze:
+def parse_cloze(cloze):
     return ClozeVisitor().parse(cloze)
 
 
@@ -51,7 +50,7 @@ class ClozeVisitor(NodeVisitor):
         pass
 
     def visit_cloze(self, node, children):
-        answers = list([children[5]] + list(children[6]))
+        answers = tuple([children[5]] + list(children[6]))
         return Cloze(id=children[1], cloze_type=children[3], answers=answers)
 
     def visit_further_answers(self, node, children):
@@ -126,7 +125,7 @@ def test_extract_questions():
         </question>
       </quiz>
         """
-    questions = list(extract_questions(StringIO(quiz)))
+    questions = tuple(extract_questions(StringIO(quiz)))
     assert len(questions) == 2
     assert questions[0][0] == "Aufgabe 01a Nomenklatur"
     assert questions[0][1] == "<p>hi</p>"
@@ -145,7 +144,7 @@ def test_extract_clozes():
         <p><strong>3)</strong> Wie lautet der Name des im Molekül enthaltenen Heterocyclus (Name des unsubstituierten Heterocyclus)?</p>
         <p>{1:SHORTANSWER:=Piperidin~=Azacyclohexan~=1-Azacyclohexan~xxxxxxxxxxxxxxxxxxxx}</p>
         """
-    clozes = list(extract_clozes(question))
+    clozes = tuple(extract_clozes(question))
     assert clozes == (
         "{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}",
         "{1:MULTICHOICE:R~S~=Z~E~P~M~Re~Si}",
