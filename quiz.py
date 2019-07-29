@@ -141,6 +141,7 @@ def test_extract_clozes():
         <p>{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}</p>
         <p><strong>2)</strong> Wie lautet der Stereodeskriptor für obiges Molekül?</p>
         <p>{1:MULTICHOICE:R~S~=Z~E~P~M~Re~Si}</p>
+        <p><img src="@@PLUGINFILE@@/1a%20%281%29.png" alt="" role="presentation" class="img-responsive atto_image_button_text-bottom" width="385" height="210"><br><br>p<em>K</em><sub>a</sub>(<strong>A</strong>) = {1:NUMERICAL:=44.0:2.1~99999999999999999999}</p>
         <p><strong>3)</strong> Wie lautet der Name des im Molekül enthaltenen Heterocyclus (Name des unsubstituierten Heterocyclus)?</p>
         <p>{1:SHORTANSWER:=Piperidin~=Azacyclohexan~=1-Azacyclohexan~xxxxxxxxxxxxxxxxxxxx}</p>
         """
@@ -148,6 +149,7 @@ def test_extract_clozes():
     assert clozes == (
         "{1:SHORTANSWER:=But-2-enal~=2-Butenal~=But-2-en-1-al~=2-Buten-1-al~%50%But-2-enon~%50%2-Butenon~%50%But-2-en-1-on~%50%2-Buten-1-on~xxxxxxxxxxxxxxxxxxxx}",
         "{1:MULTICHOICE:R~S~=Z~E~P~M~Re~Si}",
+        "{1:NUMERICAL:=44.0:2.1~99999999999999999999}",
         "{1:SHORTANSWER:=Piperidin~=Azacyclohexan~=1-Azacyclohexan~xxxxxxxxxxxxxxxxxxxx}",
     )
 
@@ -162,3 +164,10 @@ def test_parse_cloze():
     assert cloze.answers[0] == Answer(text="But-2-enal", score=100)
     assert cloze.answers[4] == Answer(text="But-2-enon", score=50)
     assert cloze.answers[8] == Answer(text="xxxxxxxxxxxxxxxxxxxx", score=0)
+
+    cloze = parse_cloze("{1:NUMERICAL:=44.0:2.1~99999999999999999999}")
+
+    assert isinstance(cloze, Cloze)
+    assert len(cloze.answers) == 2
+    assert cloze.answers[0] == Answer(text="44.0:2.1", score=100)
+    assert cloze.answers[1] == Answer(text="99999999999999999999", score=0)
