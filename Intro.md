@@ -1,6 +1,6 @@
 # Introduction
 
-In this series, I will show you how I built data processing pipeline in Python. There will be plenty of code snippets, but my primary goal is to show you the patterns, techniques and tools I used.
+In this series, I will show you how I built a data processing pipeline in Python. There will be plenty of code snippets, but my primary goal is to show you the patterns, techniques and tools I used.
 
 I wrote this series so my scientist friends can spend more time doing science and less time wrangling data.
 
