@@ -83,16 +83,8 @@ Note how the example _output_ actually helps us understand the _input_: there is
 
 ### Environment setup
 
-Bla
-
-    python3 -m venv .
-    source bin/activate
-    pip3 install --upgrade pip
-    pip3 install pytest
-    pytest demoodle.py
-    pip3 install lxml
-    pip3 install black
-    pip3 install flake8
+    nix-shell
+    poetry install
 
 - break problem down, write TODOs
 - assert judiciously

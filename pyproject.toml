@@ -1,3 +1,20 @@
+[tool.poetry]
+name = "python-for-scientists"
+version = "0.1.0"
+description = ""
+authors = ["Leonhard Markert <curiousleo@users.noreply.github.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+lxml = "^4.3"
+pandas = "^1"
+parsimonious = "^0.8.1"
+
+[tool.poetry.dev-dependencies]
+
 [tool.black]
 line-length = 100
-py36 = true
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

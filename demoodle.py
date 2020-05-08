@@ -3,7 +3,9 @@
 import csv
 from operator import itemgetter
 
-import quiz, output, result
+import output
+import quiz
+import result
 
 
 if __name__ == "__main__":
