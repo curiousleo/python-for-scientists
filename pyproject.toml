@@ -6,7 +6,7 @@ authors = ["Leonhard Markert <curiousleo@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-lxml = "^4.6"
+lxml = "^4.9"
 pandas = "^1"
 parsimonious = "^0.8.1"
 
